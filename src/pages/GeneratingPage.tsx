@@ -50,7 +50,7 @@ export function GeneratingPage() {
         setGeneratedPoster(poster);
         goTo("result");
       } catch {
-        if (!cancelled) setGenerateError("生成失败，请重新生成");
+        if (!cancelled) setGenerateError("这次生成没有成功，再试一次吧");
       }
     };
     void start();

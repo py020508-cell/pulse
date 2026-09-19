@@ -1,4 +1,35 @@
-import type { GeneratePosterInput, StyleId } from "../types/experience";
+import type {
+  GeneratePosterInput,
+  Persona,
+  VisualStyle,
+} from "../types/experience";
+
+/**
+ * 调用后端 /api/generate，用真实图片生成 API 产出「人物主视觉」。
+ * 返回的是可以直接绘制到 Canvas 的 data URL。
+ */
+async function generatePersonaVisual(
+  persona: Persona,
+  style: VisualStyle,
+  image: string,
+): Promise<string> {
+  const response = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image, persona, style }),
+  });
+
+  const data = (await response.json().catch(() => null)) as {
+    image?: string;
+    error?: string;
+  } | null;
+
+  if (!response.ok || !data?.image) {
+    throw new Error(data?.error ?? "GENERATION_FAILED");
+  }
+
+  return data.image;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -37,98 +68,6 @@ function drawCover(
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-function applyStyleGrade(ctx: CanvasRenderingContext2D, styleId: StyleId, w: number, h: number) {
-  if (styleId === "mono") {
-    const image = ctx.getImageData(0, 0, w, h);
-    const data = image.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const g = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
-      const v = Math.min(255, g * 1.15);
-      data[i] = v;
-      data[i + 1] = v;
-      data[i + 2] = v;
-    }
-    ctx.putImageData(image, 0, 0);
-  }
-
-  ctx.save();
-  if (styleId === "cyberpunk") {
-    ctx.globalCompositeOperation = "overlay";
-    const g = ctx.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, "rgba(34, 211, 238, 0.55)");
-    g.addColorStop(0.5, "rgba(236, 72, 153, 0.2)");
-    g.addColorStop(1, "rgba(168, 85, 247, 0.6)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-  } else if (styleId === "y2k") {
-    ctx.globalCompositeOperation = "screen";
-    ctx.fillStyle = "rgba(244, 114, 182, 0.22)";
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "overlay";
-    ctx.fillStyle = "rgba(125, 211, 252, 0.28)";
-    ctx.fillRect(0, 0, w, h);
-  } else if (styleId === "film") {
-    ctx.globalCompositeOperation = "multiply";
-    ctx.fillStyle = "rgba(180, 120, 60, 0.28)";
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "overlay";
-    ctx.fillStyle = "rgba(120, 80, 40, 0.25)";
-    ctx.fillRect(0, 0, w, h);
-  } else if (styleId === "graffiti") {
-    ctx.globalCompositeOperation = "overlay";
-    const g = ctx.createLinearGradient(0, h, w, 0);
-    g.addColorStop(0, "rgba(34, 197, 94, 0.45)");
-    g.addColorStop(0.5, "rgba(250, 204, 21, 0.25)");
-    g.addColorStop(1, "rgba(236, 72, 153, 0.45)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-  } else if (styleId === "starry") {
-    ctx.globalCompositeOperation = "multiply";
-    ctx.fillStyle = "rgba(30, 27, 75, 0.35)";
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "screen";
-    ctx.fillStyle = "rgba(167, 139, 250, 0.22)";
-    ctx.fillRect(0, 0, w, h);
-  }
-  ctx.restore();
-}
-
-function drawStars(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  for (let i = 0; i < 90; i += 1) {
-    const x = Math.random() * w;
-    const y = Math.random() * h;
-    const r = Math.random() * 1.8;
-    ctx.globalAlpha = 0.25 + Math.random() * 0.7;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawGrain(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const image = ctx.getImageData(0, 0, w, h);
-  const data = image.data;
-  for (let i = 0; i < data.length; i += 16) {
-    const n = (Math.random() - 0.5) * 28;
-    data[i] = Math.max(0, Math.min(255, data[i] + n));
-    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + n));
-    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + n));
-  }
-  ctx.putImageData(image, 0, 0);
-}
-
-function drawScanlines(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.12)";
-  for (let y = 0; y < h; y += 4) {
-    ctx.fillRect(0, y, w, 1);
-  }
-  ctx.restore();
-}
-
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -147,29 +86,29 @@ function roundRect(
 }
 
 /**
- * Demo poster composer. Swap the body of this function with a real AIGC API later.
+ * 最终海报合成：
+ * 1. 先请求后端生成「人物主视觉」；
+ * 2. 再把品牌文字、昵称、人格名称、Festival ID 等模板元素叠加到 Canvas 上。
  */
 export async function generatePoster(input: GeneratePosterInput): Promise<string> {
   const { persona, style, image, nickname, festivalId } = input;
   const width = 1080;
   const height = 1440;
+
+  const visual = await generatePersonaVisual(persona, style, image);
+  const photo = await loadImage(visual);
+
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("CANVAS_UNAVAILABLE");
 
-  const photo = await loadImage(image);
-
   ctx.fillStyle = "#07050f";
   ctx.fillRect(0, 0, width, height);
   drawCover(ctx, photo, 0, 0, width, height);
-  applyStyleGrade(ctx, style.id, width, height);
 
-  if (style.id === "starry" || style.id === "cyberpunk") drawStars(ctx, width, height);
-  if (style.id === "film" || style.id === "mono") drawGrain(ctx, width, height);
-  if (style.id === "cyberpunk") drawScanlines(ctx, width, height);
-
+  // 底部渐变压暗，保证文字清晰可读
   const veil = ctx.createLinearGradient(0, 0, 0, height);
   veil.addColorStop(0, "rgba(7,5,15,0.25)");
   veil.addColorStop(0.45, "rgba(7,5,15,0.08)");
@@ -178,6 +117,7 @@ export async function generatePoster(input: GeneratePosterInput): Promise<string
   ctx.fillStyle = veil;
   ctx.fillRect(0, 0, width, height);
 
+  // 外框
   ctx.save();
   ctx.strokeStyle = persona.accent;
   ctx.globalAlpha = 0.85;
@@ -185,6 +125,7 @@ export async function generatePoster(input: GeneratePosterInput): Promise<string
   ctx.strokeRect(48, 48, width - 96, height - 96);
   ctx.restore();
 
+  // 品牌区
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "700 42px Syne, sans-serif";
   ctx.fillText("PULSE", 84, 130);
@@ -192,6 +133,7 @@ export async function generatePoster(input: GeneratePosterInput): Promise<string
   ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.fillText("MUSIC FESTIVAL  ·  LIVE TONIGHT", 84, 168);
 
+  // 右上角：Festival ID + 风格名
   ctx.textAlign = "right";
   ctx.fillStyle = persona.accent;
   ctx.font = "700 24px Space Grotesk, sans-serif";
@@ -201,6 +143,7 @@ export async function generatePoster(input: GeneratePosterInput): Promise<string
   ctx.fillText(style.englishName, width - 84, 168);
   ctx.textAlign = "left";
 
+  // 昵称 + 人格信息
   ctx.fillStyle = "rgba(255,255,255,0.9)";
   ctx.font = "600 28px Noto Sans SC, sans-serif";
   ctx.fillText(nickname, 84, height - 280);
@@ -217,6 +160,7 @@ export async function generatePoster(input: GeneratePosterInput): Promise<string
   ctx.font = "500 28px Noto Sans SC, sans-serif";
   ctx.fillText(`「${persona.slogan}」`, 84, height - 62);
 
+  // 右下角活动角标
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.35)";
   roundRect(ctx, width - 250, height - 118, 166, 46, 23);

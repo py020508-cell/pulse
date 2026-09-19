@@ -41,7 +41,7 @@ export function AttractPage() {
             AI 生成你的专属音乐节海报
           </p>
           <div className="mt-12">
-            <PrimaryButton onClick={() => guard(() => goTo("persona"))}>
+            <PrimaryButton onClick={() => guard(() => goTo("nickname"))}>
               开始生成
             </PrimaryButton>
           </div>

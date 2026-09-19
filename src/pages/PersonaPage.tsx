@@ -22,7 +22,7 @@ export function PersonaPage() {
   return (
     <div className="relative h-full">
       <BackButton />
-      <StageHeader kicker="STEP 01" title="选择你的音乐人格" />
+      <StageHeader kicker="STEP 02" title="选择你的音乐人格" />
       <div className="grid h-[calc(100%-140px)] grid-cols-3 gap-6 px-12 pb-10 pt-8">
         {PERSONAS.map((persona) => {
           const selected = selectedPersona?.id === persona.id;

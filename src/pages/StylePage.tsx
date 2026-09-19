@@ -20,7 +20,7 @@ export function StylePage() {
   return (
     <div className="relative h-full">
       <BackButton />
-      <StageHeader kicker="STEP 02" title="选择你喜欢的视觉风格" />
+      <StageHeader kicker="STEP 03" title="选择你喜欢的视觉风格" />
       <div className="grid h-[calc(100%-140px)] grid-cols-3 gap-6 px-12 pb-10 pt-8">
         {VISUAL_STYLES.map((style) => {
           const selected = selectedStyle?.id === style.id;

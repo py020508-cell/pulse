@@ -121,7 +121,7 @@ export function CapturePage() {
   return (
     <div className="relative h-full">
       <BackButton />
-      <StageHeader kicker="STEP 03" title="拍一张照片，生成你的音乐形象" />
+      <StageHeader kicker="STEP 04" title="拍一张照片，生成你的音乐形象" />
       <div className="flex h-[calc(100%-140px)] items-center justify-center gap-16 px-12 pb-10">
         <div className="relative">
           <div className="absolute -inset-6 rounded-[42px] bg-gradient-to-br from-fuchsia-500/30 via-transparent to-cyan-400/30 blur-xl" />

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AttractPage } from "./pages/AttractPage";
 import { CapturePage } from "./pages/CapturePage";
 import { GeneratingPage } from "./pages/GeneratingPage";
+import { NicknamePage } from "./pages/NicknamePage";
 import { PersonaPage } from "./pages/PersonaPage";
 import { ResultPage } from "./pages/ResultPage";
 import { StylePage } from "./pages/StylePage";
@@ -45,6 +46,7 @@ export default function App() {
       <div className="noise-overlay" />
       <div className="page-enter relative z-10" key={currentStep}>
         {currentStep === "attract" && <AttractPage />}
+        {currentStep === "nickname" && <NicknamePage />}
         {currentStep === "persona" && <PersonaPage />}
         {currentStep === "style" && <StylePage />}
         {currentStep === "capture" && <CapturePage />}

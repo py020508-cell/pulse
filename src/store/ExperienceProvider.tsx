@@ -18,6 +18,7 @@ type Action =
   | { type: "GO"; step: Step }
   | { type: "SELECT_PERSONA"; persona: Persona }
   | { type: "SELECT_STYLE"; style: VisualStyle }
+  | { type: "SET_NICKNAME"; nickname: string }
   | { type: "SET_IMAGE"; image: string }
   | { type: "SET_POSTER"; poster: string }
   | { type: "SET_ERROR"; error: string | null }
@@ -52,6 +53,8 @@ function reducer(state: ExperienceState, action: Action): ExperienceState {
       return { ...state, selectedPersona: action.persona };
     case "SELECT_STYLE":
       return { ...state, selectedStyle: action.style };
+    case "SET_NICKNAME":
+      return { ...state, nickname: action.nickname };
     case "SET_IMAGE":
       return { ...state, capturedImage: action.image };
     case "SET_POSTER":
@@ -76,6 +79,7 @@ interface ExperienceContextValue extends ExperienceState {
   goTo: (step: Step) => void;
   selectPersona: (persona: Persona) => void;
   selectStyle: (style: VisualStyle) => void;
+  setNickname: (nickname: string) => void;
   setCapturedImage: (image: string) => void;
   setGeneratedPoster: (poster: string) => void;
   setGenerateError: (error: string | null) => void;
@@ -87,7 +91,8 @@ interface ExperienceContextValue extends ExperienceState {
 const ExperienceContext = createContext<ExperienceContextValue | null>(null);
 
 const BACK_MAP: Partial<Record<Step, Step>> = {
-  persona: "attract",
+  nickname: "attract",
+  persona: "nickname",
   style: "persona",
   capture: "style",
   generating: "capture",
@@ -104,6 +109,10 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   );
   const selectStyle = useCallback(
     (style: VisualStyle) => dispatch({ type: "SELECT_STYLE", style }),
+    [],
+  );
+  const setNickname = useCallback(
+    (nickname: string) => dispatch({ type: "SET_NICKNAME", nickname }),
     [],
   );
   const setCapturedImage = useCallback(
@@ -134,6 +143,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       goTo,
       selectPersona,
       selectStyle,
+      setNickname,
       setCapturedImage,
       setGeneratedPoster,
       setGenerateError,
@@ -146,6 +156,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       goTo,
       selectPersona,
       selectStyle,
+      setNickname,
       setCapturedImage,
       setGeneratedPoster,
       setGenerateError,

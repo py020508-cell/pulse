@@ -1,5 +1,6 @@
 export type Step =
   | "attract"
+  | "nickname"
   | "persona"
   | "style"
   | "capture"
