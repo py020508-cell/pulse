@@ -1,0 +1,58 @@
+import type { Persona } from "../types/experience";
+
+export const PERSONAS: Persona[] = [
+  {
+    id: "rock",
+    name: "摇滚狂人",
+    englishName: "ROCK REBEL",
+    tagline: "把心跳调到失真",
+    slogan: "今晚的舞台，从心跳开始轰鸣",
+    accent: "#fb7185",
+    accentSoft: "rgba(251, 113, 133, 0.28)",
+  },
+  {
+    id: "edm",
+    name: "电音玩家",
+    englishName: "EDM PLAYER",
+    tagline: "节奏就是语言",
+    slogan: "把夜色调到最大，让灯光跟着你跳",
+    accent: "#22d3ee",
+    accentSoft: "rgba(34, 211, 238, 0.28)",
+  },
+  {
+    id: "poet",
+    name: "浪漫诗人",
+    englishName: "ROMANTIC POET",
+    tagline: "歌词写成光",
+    slogan: "每一句旋律，都是写给你的光",
+    accent: "#f0abfc",
+    accentSoft: "rgba(240, 171, 252, 0.28)",
+  },
+  {
+    id: "soul",
+    name: "自由灵魂",
+    englishName: "FREEDOM SOUL",
+    tagline: "不被定义的夜",
+    slogan: "音乐让平凡的日子也闪闪发光",
+    accent: "#a78bfa",
+    accentSoft: "rgba(167, 139, 250, 0.3)",
+  },
+  {
+    id: "healer",
+    name: "治愈创作者",
+    englishName: "HEALING CREATOR",
+    tagline: "喧嚣变成温柔",
+    slogan: "用旋律把喧嚣变成温柔",
+    accent: "#6ee7b7",
+    accentSoft: "rgba(110, 231, 183, 0.28)",
+  },
+  {
+    id: "party",
+    name: "派对动物",
+    englishName: "PARTY ANIMAL",
+    tagline: "今夜只为狂欢",
+    slogan: "这一夜只为狂欢而存在",
+    accent: "#fbbf24",
+    accentSoft: "rgba(251, 191, 36, 0.28)",
+  },
+];
