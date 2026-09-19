@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { buildStylePrompt } from "../lib/prompts";
 
 /**
@@ -10,8 +11,6 @@ import { buildStylePrompt } from "../lib/prompts";
  * 请求体：{ image: dataURL, persona: { id }, style: { id } }
  * 响应：  { image: dataURL } 或 { error: string }
  */
-
-export const config = { runtime: "nodejs" };
 
 interface GenerateBody {
   image?: string;
@@ -53,40 +52,39 @@ const WANX_STRENGTH = parseStrength(process.env.WANX_STRENGTH);
 const MAX_POLLS = 20;
 const POLL_INTERVAL_MS = 2000;
 
-function json(status: number, payload: unknown): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-  });
+function sendJson(res: ServerResponse, status: number, payload: unknown): void {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(payload));
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function POST(request: Request): Promise<Response> {
+type ReqWithBody = IncomingMessage & { body?: unknown };
+
+export default async function handler(req: ReqWithBody, res: ServerResponse) {
+  if (req.method !== "POST") {
+    return sendJson(res, 405, { error: "Method Not Allowed" });
+  }
+
   if (!DASHSCOPE_API_KEY) {
     console.error("[generate] DASHSCOPE_API_KEY is not configured");
-    return json(500, { error: "服务未配置，请稍后再试" });
+    return sendJson(res, 500, { error: "服务未配置，请稍后再试" });
   }
 
-  let body: GenerateBody;
-  try {
-    body = (await request.json()) as GenerateBody;
-  } catch {
-    return json(400, { error: "请求格式不正确" });
-  }
-
+  const body = (req.body ?? {}) as GenerateBody;
   const { image, persona, style } = body;
   const personaId = persona?.id;
   const styleId = style?.id;
 
   if (!image || !personaId || !styleId) {
-    return json(400, { error: "缺少生成所需的参数" });
+    return sendJson(res, 400, { error: "缺少生成所需的参数" });
   }
 
   if (!/^data:image\//.test(image)) {
-    return json(400, { error: "图片格式不正确" });
+    return sendJson(res, 400, { error: "图片格式不正确" });
   }
 
   const prompt = buildStylePrompt(personaId, styleId);
@@ -124,13 +122,13 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!submitRes.ok) {
       console.error("[generate] submit error:", submitRes.status, submitData);
-      return json(502, { error: "生成服务暂时不可用，请稍后再试" });
+      return sendJson(res, 502, { error: "生成服务暂时不可用，请稍后再试" });
     }
 
     const taskId = submitData?.output?.task_id;
     if (!taskId) {
       console.error("[generate] submit returned no task_id:", submitData);
-      return json(502, { error: "生成任务创建失败，请稍后再试" });
+      return sendJson(res, 502, { error: "生成任务创建失败，请稍后再试" });
     }
 
     // 2. 轮询任务结果
@@ -167,28 +165,28 @@ export async function POST(request: Request): Promise<Response> {
 
     if (failedMessage) {
       console.error("[generate] task failed:", failedMessage);
-      return json(502, { error: "这次生成没有成功，再试一次吧" });
+      return sendJson(res, 502, { error: "这次生成没有成功，再试一次吧" });
     }
 
     if (!imageUrl) {
       console.error("[generate] task timeout");
-      return json(504, { error: "生成超时，请再试一次" });
+      return sendJson(res, 504, { error: "生成超时，请再试一次" });
     }
 
     // 3. 下载生成图，转成 base64 返回（避免外链 24h 过期、隐私更可控）
     const imgRes = await fetch(imageUrl);
     if (!imgRes.ok) {
       console.error("[generate] download failed:", imgRes.status);
-      return json(502, { error: "生成结果下载失败，请再试一次" });
+      return sendJson(res, 502, { error: "生成结果下载失败，请再试一次" });
     }
 
     const buf = await imgRes.arrayBuffer();
     const mime = imgRes.headers.get("content-type") ?? "image/jpeg";
     const b64 = Buffer.from(buf).toString("base64");
 
-    return json(200, { image: `data:${mime};base64,${b64}` });
+    return sendJson(res, 200, { image: `data:${mime};base64,${b64}` });
   } catch (error) {
     console.error("[generate] failed:", error);
-    return json(500, { error: "这次生成没有成功，再试一次吧" });
+    return sendJson(res, 500, { error: "这次生成没有成功，再试一次吧" });
   }
 }
