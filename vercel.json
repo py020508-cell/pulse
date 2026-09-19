@@ -1,6 +1,7 @@
 {
   "functions": {
     "api/generate.ts": {
+      "runtime": "nodejs",
       "maxDuration": 60
     }
   }
